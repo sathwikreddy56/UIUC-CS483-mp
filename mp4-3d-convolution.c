@@ -29,7 +29,7 @@ __global__ void conv3d(float *input, float *output, const int z_size,
   int iy = by * blockDim.y + ty;
   int iz = bz * blockDim.z + tz;
   
-  int ndsWidth = TILE_WIDTH + MASK_WIDTH  - 1;
+  /*int ndsWidth = TILE_WIDTH + MASK_WIDTH  - 1;
   __shared__ float N_ds[(TILE_WIDTH + MASK_WIDTH  - 1) 
                         * (TILE_WIDTH + MASK_WIDTH  - 1) 
                         * (TILE_WIDTH + MASK_WIDTH  - 1)];
@@ -72,24 +72,31 @@ __global__ void conv3d(float *input, float *output, const int z_size,
   }
   N_ds[(n + tz) * ndsWidth * ndsWidth + (n + ty) * ndsWidth + (n + tx)]
     = input[iz * x_size * y_size + iy * x_size + ix];
+  __syncthreads();*/
   
-  __syncthreads();
+  printf("Block (%d, %d, %d), Thread (%d, %d, %d)\n", bx, by, bz, tx, ty, tz);
+  
   float pValue = 0;
-  int x_sp = tx - (MASK_WIDTH / 2);
-  int y_sp = ty - (MASK_WIDTH / 2);
-  int z_sp = tz - (MASK_WIDTH / 2);
+  int x_sp = ix - (MASK_WIDTH / 2);
+  int y_sp = iy - (MASK_WIDTH / 2);
+  int z_sp = iz - (MASK_WIDTH / 2);
   for (int i = 0; i < MASK_WIDTH; i++)
     for (int j = 0; j < MASK_WIDTH; j++)
       for (int k = 0; k < MASK_WIDTH; k++) {
-        int t = 0;
-        if ((z_sp + i < n || z_sp + i > TILE_WIDTH - n - 1) &&
-            (y_sp + j < n || y_sp + j > TILE_WIDTH - n - 1) &&
-            (x_sp + k < n || x_sp + k > TILE_WIDTH - n - 1))
-          t = input[(z_sp + i)*TILE_WIDTH*TILE_WIDTH + (y_sp + j)*TILE_WIDTH + x_sp];
-        else t = N_ds[(z_sp + i)*ndsWidth*ndsWidth + (y_sp + j)*ndsWidth + (x_sp + k)];
+        float t = 0;
+        if (0 <= (z_sp + i) && (z_sp + i) < z_size &&
+           0 <= (y_sp + j) && (y_sp + j) < y_size &&
+           0 <= (x_sp + k) && (x_sp + k) < x_size) {
+          t = input[(z_sp + i)*x_size*y_size + (y_sp + j)*x_size + (x_sp + k)];
+        }
         pValue += t * M[i*MASK_WIDTH*MASK_WIDTH + j*MASK_WIDTH + k];
       }
-  output[iz*x_size*y_size + iy*x_size + ix] = pValue;
+  if (0 <= iz && iz < z_size &&
+     0 <= iy && iy < y_size &&
+     0 <= ix && ix < x_size) {
+    printf("output[%d][%d][%d] = %.4f\n", iz, iy, ix, pValue);
+    output[iz*x_size*y_size + iy*x_size + ix] = pValue;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -134,7 +141,7 @@ int main(int argc, char *argv[]) {
   //@@ Copy input and kernel to GPU here
   // Recall that the first three elements of hostInput are dimensions and
   // do not need to be copied to the gpu
-  cudaMemcpyToSymbol(M, hostKernel, MASK_WIDTH * MASK_WIDTH * sizeof(float));
+  cudaMemcpyToSymbol(M, hostKernel, MASK_WIDTH * MASK_WIDTH * MASK_WIDTH * sizeof(float));
   cudaMemcpy(deviceInput, &hostInput[3], z_size * y_size * x_size * sizeof(float), cudaMemcpyHostToDevice);
   wbTime_stop(Copy, "Copying data to the GPU");
 
