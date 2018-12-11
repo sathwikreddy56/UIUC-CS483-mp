@@ -4,7 +4,7 @@
 
 #include <wb.h>
 
-#define BLOCK_SIZE 512 //@@ You can change this
+#define BLOCK_SIZE 512 // You can change this
 
 #define wbCheck(stmt)                                                     \
   do {                                                                    \
@@ -21,23 +21,21 @@ __global__ void total(float *input, float *output, int len) {
   //@@ Traverse the reduction tree
   //@@ Write the computed sum of the block to the output vector at the
   //@@ correct index
-  int blockListLen = BLOCK_SIZE * 2;
   int bx = blockIdx.x;
   int tx = threadIdx.x;
-  
-  __shared__ float sInput[BLOCK_SIZE * 2];
-  sInput[tx] = bx * blockDim.x + tx < len ? input[bx * blockDim.x + tx] : 0;
+
+  extern __shared__ float sInput[];
+  sInput[tx] = 2*bx*blockDim.x + tx < len ? input[2*bx*blockDim.x + tx] : 0;
+  sInput[tx + blockDim.x] = (2*bx + 1)*blockDim.x + tx < len ? input[(2*bx + 1)*blockDim.x + tx] : 0;
   __syncthreads();
-  
-  while (blockListLen > 1) {
-    if (tx < blockListLen/2) {
-      sInput[tx] += sInput[blockListLen /2 + tx];
-    }
-    blockListLen /= 2;
+
+  for (int stride = blockDim.x; stride >= 1; stride /= 2) {
     __syncthreads();
+    if (tx < stride)
+      sInput[tx] += sInput[tx + stride];
   }
+
   if (tx == 0) {
-    printf("block %d: + %.2f\n", bx, sInput[0]);
     output[bx] = sInput[0];
   }
 }
@@ -75,7 +73,7 @@ int main(int argc, char **argv) {
   //@@ Allocate GPU memory here
   cudaMalloc((void **)&deviceInput, numInputElements * sizeof(float));
   cudaMalloc((void **)&deviceOutput, numOutputElements * sizeof(float));
-  
+
   printf("== Input ==\n");
   for (int i = 0; i < numInputElements; i++) {
     printf("%.2f ", hostInput[i]);
@@ -90,14 +88,14 @@ int main(int argc, char **argv) {
 
   wbTime_stop(GPU, "Copying input memory to the GPU.");
   //@@ Initialize the grid and block dimensions here
-  dim3 dimGrid(ceil(numInputElements / (BLOCK_SIZE * 2.0)), 1, 1);
-  dim3 dimBlock(BLOCK_SIZE * 2, 1, 1);
-  
-  printf("numOutputElements = %d; dimGrid = %d\n", numOutputElements, (int) ceil(numInputElements / (BLOCK_SIZE * 2.0)));
+  dim3 dimGrid(ceil(numInputElements / (BLOCK_SIZE * 1.0)), 1, 1);
+  dim3 dimBlock(BLOCK_SIZE, 1, 1);
+
+  printf("numOutputElements = %d; dimGrid = %d\n", numOutputElements, (int) ceil(numInputElements / (BLOCK_SIZE * 1.0)));
 
   wbTime_start(Compute, "Performing CUDA computation");
   //@@ Launch the GPU Kernel here
-  total<<<dimGrid, dimBlock>>>(deviceInput, deviceOutput, numInputElements);
+  total<<<dimGrid, dimBlock, BLOCK_SIZE * 2 * sizeof(float)>>>(deviceInput, deviceOutput, numInputElements);
 
   cudaDeviceSynchronize();
   wbTime_stop(Compute, "Performing CUDA computation");
@@ -130,4 +128,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-
