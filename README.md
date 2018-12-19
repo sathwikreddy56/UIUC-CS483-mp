@@ -1,4 +1,6 @@
-This is the course labs for ECE408/CS483 Parallel Programming at University of Illinois at Urbana-Champaign in Fall 2018. All students originally develop their assignments using [WebGPU](https://www.webgpu.net).
+# Parallel Programming Coursework: Machine Problems
+
+This is the course labs for ECE408/CS483 *Parallel Programming* at University of Illinois at Urbana-Champaign in Fall 2018. All students originally develop their assignments using [WebGPU](https://www.webgpu.net).
 
 There are 8 machine problems (MP) for the whole semester, each one with an objective. Dataset are provided to develop the machine problem on your own system or to examine the data. These dataset can be downloaded [here](https://drive.google.com/open?id=1wshhMhg5Kcg6BvIG14r1AQjgaipIi4vX).
 
