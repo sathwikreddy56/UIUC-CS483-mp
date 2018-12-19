@@ -29,51 +29,6 @@ __global__ void conv3d(float *input, float *output, const int z_size,
   int iy = by * blockDim.y + ty;
   int iz = bz * blockDim.z + tz;
   
-  /*int ndsWidth = TILE_WIDTH + MASK_WIDTH  - 1;
-  __shared__ float N_ds[(TILE_WIDTH + MASK_WIDTH  - 1) 
-                        * (TILE_WIDTH + MASK_WIDTH  - 1) 
-                        * (TILE_WIDTH + MASK_WIDTH  - 1)];
-  int n = MASK_WIDTH / 2;
-  
-  int halo_idx_left = (bx - 1) * blockDim.x + tx;
-  if (tx > blockDim.x - n) {
-    N_ds[tz * ndsWidth * ndsWidth + ty * ndsWidth + (tx - (blockDim.x - n))]
-      = (halo_idx_left < 0) ? 0 : input[iz * x_size * y_size + iy * x_size + halo_idx_left];
-  }
-  
-  int halo_idx_right = (bx + 1) * blockDim.x + tx;
-  if (tx < n) {
-    N_ds[tz * ndsWidth * ndsWidth + ty * ndsWidth + (tx + blockDim.x + n)]
-      = (halo_idx_right >= x_size) ? 0 : input[iz * x_size * y_size + iy * x_size + halo_idx_right];
-  }
-  
-  int halo_idx_front = (by - 1) * blockDim.y + ty;
-  if (ty > blockDim.y - n) {
-    N_ds[tz * ndsWidth * ndsWidth + (ty - (blockDim.y - n)) * ndsWidth + tx]
-      = (halo_idx_front < 0) ? 0 : input[iz * x_size * y_size + halo_idx_front * x_size + ix];
-  }
-  
-  int halo_idx_rear = (by + 1) * blockDim.y + ty;
-  if (ty < n) {
-    N_ds[tz * ndsWidth * ndsWidth + (ty + blockDim.y + n) * ndsWidth + tx]
-      = (halo_idx_rear >= y_size) ? 0 : input[iz * x_size * y_size + halo_idx_front * x_size + ix];
-  }
-  
-  int halo_idx_up = (bz - 1) * blockDim.z + tz;
-  if (tz > blockDim.z - n) {
-    N_ds[(tz - (blockDim.z - n)) * ndsWidth * ndsWidth + ty * ndsWidth + tx]
-      = (halo_idx_up < 0) ? 0 : input[halo_idx_up * x_size * y_size + iy * x_size + ix];
-  }
-  
-  int halo_idx_down  = (by + 1) * blockDim.y + ty;
-  if (ty < n) {
-    N_ds[(tz + blockDim.z + n) * ndsWidth * ndsWidth + ty * ndsWidth + tx]
-      = (halo_idx_down >= z_size) ? 0 : input[halo_idx_up * x_size * y_size + iy * x_size + ix];
-  }
-  N_ds[(n + tz) * ndsWidth * ndsWidth + (n + ty) * ndsWidth + (n + tx)]
-    = input[iz * x_size * y_size + iy * x_size + ix];
-  __syncthreads();*/
-  
   printf("Block (%d, %d, %d), Thread (%d, %d, %d)\n", bx, by, bz, tx, ty, tz);
   
   float pValue = 0;
